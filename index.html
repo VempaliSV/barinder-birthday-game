@@ -13,6 +13,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
       body { font-family: 'Press Start 2P', monospace; }
+      .pixel-border { box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000; margin: 4px; }
+      .pixel-border-gold { box-shadow: -4px 0 0 0 #2b201a, 4px 0 0 0 #2b201a, 0 -4px 0 0 #2b201a, 0 4px 0 0 #2b201a, -4px -4px 0 0 #fbd000, 4px 4px 0 0 #fbd000; }
+      .pixel-btn { position: relative; display: inline-block; text-transform: uppercase; box-shadow: inset -4px -4px 0px 0px rgba(0, 0, 0, 0.4); transition: all 0.1s ease; }
+      .pixel-btn:active { box-shadow: inset 4px 4px 0px 0px rgba(0, 0, 0, 0.4); transform: translateY(2px); }
+      .scanlines { background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%); background-size: 100% 4px; }
     </style>
   </head>
   <body class="bg-gray-900 text-white min-h-screen">
@@ -20,21 +25,6 @@
 
     <script type="text/babel">
       const { useState, useEffect, useRef } = React;
-
-      const RetroGlobalStyles = () => (
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-          .font-pixel { font-family: 'Press Start 2P', cursive, monospace; }
-          * { image-rendering: pixelated; }
-          .pixel-border { box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000; margin: 4px; }
-          .pixel-border-gold { box-shadow: -4px 0 0 0 #2b201a, 4px 0 0 0 #2b201a, 0 -4px 0 0 #2b201a, 0 4px 0 0 #2b201a, -4px -4px 0 0 #fbd000, 4px 4px 0 0 #fbd000; }
-          .pixel-btn { position: relative; display: inline-block; text-transform: uppercase; box-shadow: inset -4px -4px 0px 0px rgba(0, 0, 0, 0.4); transition: all 0.1s ease; }
-          .pixel-btn:active { box-shadow: inset 4px 4px 0px 0px rgba(0, 0, 0, 0.4); transform: translateY(2px); }
-          .scanlines { background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%); background-size: 100% 4px; }
-          @keyframes qblock { 0%, 100% { background-color: #fbd000; } 50% { background-color: #e59000; } }
-          .q-block-anim { animation: qblock 1s infinite; }
-        `}</style>
-      );
 
       const FireworksCanvas = ({ active }) => {
         const canvasRef = useRef(null);
@@ -220,7 +210,6 @@
 
         return (
           <div className="min-h-screen bg-[#2b201a] text-white font-pixel scanlines flex flex-col justify-between selection:bg-yellow-400 selection:text-black relative overflow-x-hidden">
-            <RetroGlobalStyles />
             <FireworksCanvas active={fireworksActive} />
 
             {showShareModal && (
@@ -247,13 +236,13 @@
                 <div onClick={() => { playRetroSound('coin'); setActiveTab('hub'); }} className="flex items-center space-x-2 cursor-pointer">
                   <div className="bg-[#E52521] text-white p-2 rounded pixel-border font-extrabold text-sm">🍄</div>
                   <div>
-                    <div className="text-[#FBD000] font-black text-sm md:text-base">{"BARINDER'S B-DAY"}</div>
+                    <div className="text-[#FBD000] font-black text-sm md:text-base">BARINDER'S B-DAY</div>
                     <div className="text-white text-[10px]">ONLINE MULTIPLAYER ROOM</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
                   <button onClick={() => { setShowShareModal(true); playRetroSound('jump'); }} className="px-2.5 py-1.5 bg-[#E52521] text-white rounded pixel-border text-[10px] font-bold">
-                    🔗 SHARE LINK
+                    SHARE LINK
                   </button>
                   <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-1.5 bg-[#43B047] text-white rounded pixel-border text-[10px]">
                     {soundEnabled ? '🔊' : '🔇'}
@@ -268,7 +257,7 @@
                     <button
                       key={p.id}
                       onClick={() => { setActivePlayerIdx(idx); playRetroSound('coin'); }}
-                      className={'px-2 py-1 rounded text-[9px] flex items-center space-x-1 ' + (activePlayerIdx === idx ? 'bg-[#E52521] text-white pixel-border-gold font-bold scale-105' : 'bg-[#0060a0] text-blue-200')}
+                      className={"px-2 py-1 rounded text-[9px] flex items-center space-x-1 " + (activePlayerIdx === idx ? 'bg-[#E52521] text-white pixel-border-gold font-bold scale-105' : 'bg-[#0060a0] text-blue-200')}
                     >
                       <span>{p.avatar}</span>
                       <span className="max-w-[70px] truncate">{p.name}</span>
@@ -284,14 +273,14 @@
                 <div className="space-y-6">
                   <div className="bg-[#43B047] border-4 border-black p-5 md:p-8 rounded-lg pixel-border text-center">
                     <span className="bg-[#E52521] text-white text-[10px] px-3 py-1 rounded pixel-border uppercase font-bold">STAGE CLEAR • HAPPY BIRTHDAY</span>
-                    <h2 className="text-xl md:text-3xl text-[#FBD000] font-black mt-3">{"BARINDER'S BIRTHDAY BASH!"}</h2>
+                    <h2 className="text-xl md:text-3xl text-[#FBD000] font-black mt-3">BARINDER'S BIRTHDAY BASH!</h2>
                     <p className="text-white text-[11px] md:text-xs mt-3">INVITE YOUR 5 FRIENDS WITH THE LINK AND START PLAYING!</p>
                     <div className="mt-5 flex flex-wrap justify-center gap-3">
                       <button onClick={() => { playRetroSound('powerup'); setActiveTab('level1'); }} className="px-5 py-3 bg-[#E52521] text-white text-xs font-bold rounded pixel-border pixel-btn">
-                        ▶ START TRIVIA
+                        START TRIVIA
                       </button>
                       <button onClick={() => setShowShareModal(true)} className="px-4 py-3 bg-blue-600 text-white text-xs font-bold rounded pixel-border pixel-btn">
-                        🔗 SHARE LINK WITH FRIENDS
+                        SHARE LINK WITH FRIENDS
                       </button>
                     </div>
                   </div>
@@ -302,7 +291,7 @@
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
                       {players.map((player, idx) => (
-                        <div key={player.id} className={'p-2 rounded border-2 border-black flex flex-col items-center text-center ' + (activePlayerIdx === idx ? 'bg-[#FBD000] text-black font-bold' : 'bg-blue-900/80 text-white')}>
+                        <div key={player.id} className={"p-2 rounded border-2 border-black flex flex-col items-center text-center " + (activePlayerIdx === idx ? 'bg-[#FBD000] text-black font-bold' : 'bg-blue-900/80 text-white')}>
                           <span className="text-2xl mb-1">{player.avatar}</span>
                           <input
                             type="text"
@@ -346,7 +335,7 @@
               {activeTab === 'level1' && (
                 <div className="space-y-6">
                   <button onClick={() => { playRetroSound('coin'); setActiveTab('hub'); }} className="text-[10px] font-bold text-yellow-400 hover:underline">
-                    {"← RETURN TO WORLD MAP"}
+                    RETURN TO WORLD MAP
                   </button>
                   <div className="bg-[#E52521] border-4 border-black p-5 rounded-lg pixel-border space-y-4">
                     <div className="flex items-center justify-between border-b-2 border-black/40 pb-3">
@@ -368,7 +357,7 @@
                           else btnBg = "bg-stone-900 text-stone-500 opacity-50";
                         }
                         return (
-                          <button key={idx} onClick={() => handleL1Answer(idx)} disabled={l1Revealed} className={'p-4 rounded border-2 border-black text-left text-xs font-bold ' + btnBg}>
+                          <button key={idx} onClick={() => handleL1Answer(idx)} disabled={l1Revealed} className={"p-4 rounded border-2 border-black text-left text-xs font-bold " + btnBg}>
                             {String.fromCharCode(65 + idx)}. {opt}
                           </button>
                         );
@@ -391,7 +380,7 @@
 
               {activeTab === 'level3' && (
                 <div className="space-y-6">
-                  <button onClick={() => { playRetroSound('coin'); setActiveTab('hub'); }} className="text-[10px] font-bold text-yellow-400">{"← RETURN TO WORLD MAP"}</button>
+                  <button onClick={() => { playRetroSound('coin'); setActiveTab('hub'); }} className="text-[10px] font-bold text-yellow-400">RETURN TO WORLD MAP</button>
                   <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
                     <span className="bg-[#E52521] text-white text-[10px] px-3 py-1 rounded pixel-border">VOTING ROUND</span>
                     <h3 className="text-base md:text-xl font-black text-white">{MOST_LIKELY_QUESTIONS[mlQuestionIdx]}</h3>
@@ -413,13 +402,41 @@
 
               {activeTab === 'level4' && (
                 <div className="space-y-6">
-                  <button onClick={() => { playRetroSound('coin'); setActiveTab('hub'); }} className="text-[10px] font-bold text-yellow-400">{"← RETURN TO WORLD MAP"}</button>
+                  <button onClick={() => { playRetroSound('coin'); setActiveTab('hub'); }} className="text-[10px] font-bold text-yellow-400">RETURN TO WORLD MAP</button>
                   <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
                     <span className="bg-purple-600 text-white text-[10px] px-3 py-1 rounded pixel-border">FACT #{bluffIndex + 1} OF {BLUFF_FACTS.length}</span>
                     <h3 className="text-sm md:text-lg font-black text-white leading-relaxed">{BLUFF_FACTS[bluffIndex].fact}</h3>
                     {!bluffRevealed ? (
                       <div className="flex justify-center gap-4 my-4">
                         <button onClick={() => { setBluffRevealed(true); if (BLUFF_FACTS[bluffIndex].isReal) { playRetroSound('powerup'); addPointsToCurrentPlayer(150); } else { playRetroSound('wrong'); } }} className="px-6 py-3 bg-[#43B047] text-white font-bold text-xs rounded pixel-border">
-                          ✅ REAL FACT
+                          REAL FACT
                         </button>
-                        <button onClick={() => { setBluffRevealed(true); if (!BLUFF_FACTS[bluffIndex].isReal) { playRetroSound('powerup'); addPointsToCurrentPlayer(150); } else { playRetroSound('wrong'); } }} className="px-
+                        <button onClick={() => { setBluffRevealed(true); if (!BLUFF_FACTS[bluffIndex].isReal) { playRetroSound('powerup'); addPointsToCurrentPlayer(150); } else { playRetroSound('wrong'); } }} className="px-6 py-3 bg-[#E52521] text-white font-bold text-xs rounded pixel-border">
+                          FAKE NEWS
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-xs font-bold text-yellow-300">{BLUFF_FACTS[bluffIndex].explanation}</p>
+                        <button onClick={() => { setBluffRevealed(false); setBluffIndex((bluffIndex + 1) % BLUFF_FACTS.length); playRetroSound('coin'); }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
+                          NEXT FACT →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </main>
+
+            <footer className="bg-black border-t-4 border-black p-3 text-center text-[9px] text-zinc-400 flex justify-between items-center max-w-5xl mx-auto w-full">
+              <span>BARINDER'S B-DAY ARCADE</span>
+              <span className="text-yellow-400 font-bold">COINS: {coins} 🪙</span>
+            </footer>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+  </body>
+</html>
