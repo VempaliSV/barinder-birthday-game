@@ -21,43 +21,21 @@
     <script type="text/babel">
       const { useState, useEffect, useRef } = React;
 
-      // Global Retro CSS Styles
       const RetroGlobalStyles = () => (
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
           .font-pixel { font-family: 'Press Start 2P', cursive, monospace; }
           * { image-rendering: pixelated; }
-          .pixel-border {
-            box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000;
-            margin: 4px;
-          }
-          .pixel-border-gold {
-            box-shadow: -4px 0 0 0 #2b201a, 4px 0 0 0 #2b201a, 0 -4px 0 0 #2b201a, 0 4px 0 0 #2b201a, -4px -4px 0 0 #fbd000, 4px 4px 0 0 #fbd000;
-          }
-          .pixel-btn {
-            position: relative;
-            display: inline-block;
-            text-transform: uppercase;
-            box-shadow: inset -4px -4px 0px 0px rgba(0, 0, 0, 0.4);
-            transition: all 0.1s ease;
-          }
-          .pixel-btn:active {
-            box-shadow: inset 4px 4px 0px 0px rgba(0, 0, 0, 0.4);
-            transform: translateY(2px);
-          }
-          .scanlines {
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-            background-size: 100% 4px;
-          }
-          @keyframes qblock {
-            0%, 100% { background-color: #fbd000; }
-            50% { background-color: #e59000; }
-          }
+          .pixel-border { box-shadow: -4px 0 0 0 #000, 4px 0 0 0 #000, 0 -4px 0 0 #000, 0 4px 0 0 #000; margin: 4px; }
+          .pixel-border-gold { box-shadow: -4px 0 0 0 #2b201a, 4px 0 0 0 #2b201a, 0 -4px 0 0 #2b201a, 0 4px 0 0 #2b201a, -4px -4px 0 0 #fbd000, 4px 4px 0 0 #fbd000; }
+          .pixel-btn { position: relative; display: inline-block; text-transform: uppercase; box-shadow: inset -4px -4px 0px 0px rgba(0, 0, 0, 0.4); transition: all 0.1s ease; }
+          .pixel-btn:active { box-shadow: inset 4px 4px 0px 0px rgba(0, 0, 0, 0.4); transform: translateY(2px); }
+          .scanlines { background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%); background-size: 100% 4px; }
+          @keyframes qblock { 0%, 100% { background-color: #fbd000; } 50% { background-color: #e59000; } }
           .q-block-anim { animation: qblock 1s infinite; }
         `}</style>
       );
 
-      // Canvas Celebration Fireworks
       const FireworksCanvas = ({ active }) => {
         const canvasRef = useRef(null);
         useEffect(() => {
@@ -73,15 +51,10 @@
             for (let i = 0; i < 40; i++) {
               const angle = (Math.PI * 2 * i) / 40;
               const speed = Math.random() * 5 + 2;
-              particles.push({
-                x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-                size: Math.random() * 6 + 3, color: colors[Math.floor(Math.random() * colors.length)], life: 60
-              });
+              particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 6 + 3, color: colors[Math.floor(Math.random() * colors.length)], life: 60 });
             }
           };
-          let interval = setInterval(() => {
-            createExplosion(Math.random() * canvas.width, Math.random() * (canvas.height * 0.6));
-          }, 400);
+          let interval = setInterval(() => { createExplosion(Math.random() * canvas.width, Math.random() * (canvas.height * 0.6)); }, 400);
           let animationId;
           const render = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -170,7 +143,6 @@
         const [l1Round, setL1Round] = useState(0);
         const [l1SelectedOpt, setL1SelectedOpt] = useState(null);
         const [l1Revealed, setL1Revealed] = useState(false);
-
         const [mlQuestionIdx, setMlQuestionIdx] = useState(0);
         const [bluffIndex, setBluffIndex] = useState(0);
         const [bluffRevealed, setBluffRevealed] = useState(false);
@@ -209,96 +181,4 @@
               osc.start(now); osc.stop(now + 0.3);
             } else if (type === 'fanfare') {
               setFireworksActive(true);
-              setTimeout(() => setFireworksActive(false), 5000);
-              osc.type = 'square';
-              [523.25, 523.25, 523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => osc.frequency.setValueAtTime(freq, now + i * 0.12));
-              gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
-              osc.start(now); osc.stop(now + 0.8);
-            }
-          } catch (e) {}
-        };
-
-        const addPointsToPlayer = (playerIdx, pts) => {
-          const targetPlayerId = players[playerIdx].id;
-          setPlayers(prev => prev.map(p => p.id === targetPlayerId ? { ...p, score: Math.max(0, p.score + pts) } : p));
-        };
-
-        const addPointsToCurrentPlayer = (pts) => addPointsToPlayer(activePlayerIdx, pts);
-
-        const handleCopyLink = () => {
-          const shareUrl = `${window.location.origin}${window.location.pathname}?room=${roomCode}`;
-          navigator.clipboard.writeText(shareUrl);
-          setCopiedLink(true);
-          playRetroSound('coin');
-          setTimeout(() => setCopiedLink(false), 3000);
-        };
-
-        const handleL1Answer = (optIdx) => {
-          if (l1Revealed) return;
-          setL1SelectedOpt(optIdx);
-          setL1Revealed(true);
-          const q = triviaQuestions[l1Round];
-          if (optIdx === q.correctIndex) {
-            playRetroSound('powerup');
-            addPointsToCurrentPlayer(q.points);
-          } else {
-            playRetroSound('wrong');
-          }
-        };
-
-        return (
-          <div className="min-h-screen bg-[#2b201a] text-white font-pixel scanlines flex flex-col justify-between selection:bg-yellow-400 selection:text-black relative overflow-x-hidden">
-            <RetroGlobalStyles />
-            <FireworksCanvas active={fireworksActive} />
-
-            {/* SHARE MODAL */}
-            {showShareModal && (
-              <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
-                  <span className="text-3xl">🎮</span>
-                  <h3 className="text-sm md:text-base font-black text-yellow-300 uppercase">SHARE GAME WITH FRIENDS</h3>
-                  <p className="text-[10px] text-blue-100 leading-relaxed">
-                    Send this link to all 5 friends! You can host the game on Zoom, FaceTime, or cast it to your TV screen while everyone plays together!
-                  </p>
-                  <div className="bg-black/60 p-3 rounded border border-black flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-yellow-300 truncate font-mono">{window.location.origin}?room={roomCode}</span>
-                    <button onClick={handleCopyLink} className="px-3 py-1.5 bg-[#FBD000] text-black font-bold text-[10px] rounded pixel-border">
-                      {copiedLink ? 'COPIED!' : 'COPY'}
-                    </button>
-                  </div>
-                  <button onClick={() => { playRetroSound('coin'); setShowShareModal(false); }} className="w-full py-2 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
-                    CLOSE & BACK TO GAME
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* HEADER */}
-            <header className="bg-[#0090E0] border-b-4 border-black p-3 md:p-4 text-xs sticky top-0 z-40 shadow-xl">
-              <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
-                <div onClick={() => { playRetroSound('coin'); setActiveTab('hub'); }} className="flex items-center space-x-2 cursor-pointer">
-                  <div className="bg-[#E52521] text-white p-2 rounded pixel-border font-extrabold text-sm">🍄</div>
-                  <div>
-                    <div className="text-[#FBD000] font-black text-sm md:text-base">{"BARINDER'S B-DAY"}</div>
-                    <div className="text-white text-[10px]">ONLINE MULTIPLAYER ROOM</div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <button onClick={() => { setShowShareModal(true); playRetroSound('jump'); }} className="px-2.5 py-1.5 bg-[#E52521] text-white rounded pixel-border text-[10px] font-bold">
-                    🔗 SHARE LINK
-                  </button>
-                  <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-1.5 bg-[#43B047] text-white rounded pixel-border text-[10px]">
-                    {soundEnabled ? '🔊' : '🔇'}
-                  </button>
-                </div>
-              </div>
-
-              {/* ACTIVE PLAYER BAR */}
-              <div className="mt-3 pt-2 border-t border-blue-400/50 flex items-center justify-between overflow-x-auto gap-2">
-                <span className="text-[10px] text-blue-100 uppercase shrink-0">CURRENT TURN:</span>
-                <div className="flex space-x-2">
-                  {players.map((p, idx) => (
-                    <button
-                      key={p.id}
-                      onClick={() => { setActivePlayerIdx(idx); playRetroSound('coin'); }}
-                      className={`px-2 py-1 rounded text-[9px] flex
+              setTimeout(() => setFireworksActive(false), 50
