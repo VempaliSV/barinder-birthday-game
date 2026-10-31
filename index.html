@@ -33,7 +33,7 @@
       const firebaseConfig = {
         apiKey: "AIzaSyB_9eOcXW9Wf6Aiva88dSVow8y8X2EpIHM",
         authDomain: "barinder-birthday-game.firebaseapp.com",
-        databaseURL: "https://barinder-birthday-game-default-rtdb.asia-southeast1.firebasedatabase.app", // Connected to your Realtime DB
+        databaseURL: "https://barinder-birthday-game-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "barinder-birthday-game",
         storageBucket: "barinder-birthday-game.firebasestorage.app",
         messagingSenderId: "52584524307",
@@ -71,6 +71,13 @@
         "Who is most likely to organize an impromptu surprise trip?"
       ];
 
+      const BLUFF_FACTS = [
+        { fact: "Barinder once tried to build his own computer and accidentally created a makeshift toaster.", isReal: false, explanation: "Fake! He built a working PC, but it definitely didn't toast bread." },
+        { fact: "Bananas are naturally radioactive due to high potassium content.", isReal: true, explanation: "Real! They contain Potassium-40, though completely harmless!" },
+        { fact: "Mario was originally named 'Jumpman' in his debut game Donkey Kong.", isReal: true, explanation: "Real! Nintendo later named him Mario after their landlord." },
+        { fact: "Wombat poop is shaped like distinct cubes to stop it from rolling away.", isReal: true, explanation: "Real! Wombats use their square droppings to mark territory on rocks and logs." }
+      ];
+
       function App() {
         const urlParams = new URLSearchParams(window.location.search);
         const roomCode = urlParams.get('room') || 'BARINDER-ROOM-1';
@@ -94,6 +101,8 @@
         const [l1SelectedOpt, setL1SelectedOpt] = useState(null);
         const [l1Revealed, setL1Revealed] = useState(false);
         const [mlQuestionIdx, setMlQuestionIdx] = useState(0);
+        const [bluffIndex, setBluffIndex] = useState(0);
+        const [bluffRevealed, setBluffRevealed] = useState(false);
 
         // Real-Time Firebase Sync Listener
         useEffect(() => {
@@ -103,18 +112,22 @@
             if (data) {
               if (data.players) setPlayers(data.players);
               if (data.l1Round !== undefined) setL1Round(data.l1Round);
+              if (data.mlQuestionIdx !== undefined) setMlQuestionIdx(data.mlQuestionIdx);
+              if (data.bluffIndex !== undefined) setBluffIndex(data.bluffIndex);
               if (data.activeTab) setActiveTab(data.activeTab);
             } else {
-              roomRef.set({ players, l1Round: 0, activeTab: 'hub' });
+              roomRef.set({ players, l1Round: 0, mlQuestionIdx: 0, bluffIndex: 0, activeTab: 'hub' });
             }
           });
           return () => roomRef.off();
         }, [roomCode]);
 
-        const pushToFirebase = (updatedPlayers, newRound, newTab) => {
+        const pushToFirebase = (updatedPlayers, newRound, newMl, newBluff, newTab) => {
           db.ref('rooms/' + roomCode).set({
             players: updatedPlayers || players,
             l1Round: newRound !== undefined ? newRound : l1Round,
+            mlQuestionIdx: newMl !== undefined ? newMl : mlQuestionIdx,
+            bluffIndex: newBluff !== undefined ? newBluff : bluffIndex,
             activeTab: newTab || activeTab
           });
         };
@@ -192,7 +205,7 @@
 
             <header className="bg-[#0090E0] border-b-4 border-black p-3 md:p-4 text-xs sticky top-0 z-40 shadow-xl">
               <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
-                <div onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, 'hub'); }} className="flex items-center space-x-2 cursor-pointer">
+                <div onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="flex items-center space-x-2 cursor-pointer">
                   <div className="bg-[#E52521] text-white p-2 rounded pixel-border font-extrabold text-sm">🍄</div>
                   <div>
                     <div className="text-[#FBD000] font-black text-sm md:text-base">BARINDER'S B-DAY</div>
@@ -230,22 +243,26 @@
                 <div className="space-y-6 text-center">
                   <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border">
                     <h2 className="text-xl text-[#FBD000] font-black">BARINDER'S BIRTHDAY BASH! 🎉</h2>
-                    <p className="text-xs my-3 text-white">Real-Time Multiplayer Synced</p>
-                    <div className="flex justify-center gap-3">
-                      <button onClick={() => { setActiveTab('level1'); pushToFirebase(null, null, 'level1'); }} className="px-5 py-3 bg-red-600 text-white font-bold rounded text-xs pixel-border">
-                        ▶ START SUPER TRIVIA
+                    <p className="text-xs my-3 text-white">Select a game mode below:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                      <button onClick={() => { setActiveTab('level1'); pushToFirebase(null, null, null, null, 'level1'); }} className="p-4 bg-red-600 text-white font-bold rounded text-xs pixel-border hover:bg-red-500">
+                        ❓ SUPER TRIVIA
                       </button>
-                      <button onClick={() => setShowShareModal(true)} className="px-5 py-3 bg-blue-600 text-white font-bold rounded text-xs pixel-border">
-                        🔗 SHARE ROOM LINK
+                      <button onClick={() => { setActiveTab('level2'); pushToFirebase(null, null, null, null, 'level2'); }} className="p-4 bg-emerald-600 text-white font-bold rounded text-xs pixel-border hover:bg-emerald-500">
+                        👑 MOST LIKELY TO...
+                      </button>
+                      <button onClick={() => { setActiveTab('level3'); pushToFirebase(null, null, null, null, 'level3'); }} className="p-4 bg-blue-600 text-white font-bold rounded text-xs pixel-border hover:bg-blue-500">
+                        🕵️ BLUFFER'S DILEMMA
                       </button>
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* GAME 1: SUPER TRIVIA */}
               {activeTab === 'level1' && (
                 <div className="space-y-6">
-                  <button onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, 'hub'); }} className="text-[10px] font-bold text-yellow-400">
+                  <button onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
                   <div className="bg-[#E52521] border-4 border-black p-5 rounded-lg pixel-border space-y-4">
@@ -283,6 +300,69 @@
                       }} className="w-full py-3 bg-[#FBD000] text-black font-black text-xs rounded pixel-border">
                         NEXT QUESTION →
                       </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* GAME 2: MOST LIKELY TO */}
+              {activeTab === 'level2' && (
+                <div className="space-y-6">
+                  <button onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="text-[10px] font-bold text-yellow-400">
+                    ← RETURN TO WORLD MAP
+                  </button>
+                  <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
+                    <span className="bg-[#E52521] text-white text-[10px] px-3 py-1 rounded pixel-border">VOTING ROUND</span>
+                    <h3 className="text-base md:text-xl font-black text-white">{MOST_LIKELY_QUESTIONS[mlQuestionIdx]}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 my-4">
+                      {players.map((p, pIdx) => (
+                        <button key={p.id} onClick={() => { playRetroSound('powerup'); addPointsToPlayer(pIdx, 100); alert(p.name + ' got a vote! (+100 pts)'); }} className="p-3 bg-emerald-800 hover:bg-emerald-700 border-2 border-black rounded text-xs font-bold flex flex-col items-center">
+                          <span className="text-2xl mb-1">{p.avatar}</span>
+                          <span>{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => {
+                      const nextMl = (mlQuestionIdx + 1) % MOST_LIKELY_QUESTIONS.length;
+                      setMlQuestionIdx(nextMl);
+                      pushToFirebase(null, null, nextMl);
+                    }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
+                      NEXT QUESTION →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* GAME 3: THE BLUFFER'S DILEMMA */}
+              {activeTab === 'level3' && (
+                <div className="space-y-6">
+                  <button onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="text-[10px] font-bold text-yellow-400">
+                    ← RETURN TO WORLD MAP
+                  </button>
+                  <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
+                    <span className="bg-purple-600 text-white text-[10px] px-3 py-1 rounded pixel-border">FACT #{bluffIndex + 1} OF {BLUFF_FACTS.length}</span>
+                    <h3 className="text-sm md:text-lg font-black text-white leading-relaxed">{BLUFF_FACTS[bluffIndex].fact}</h3>
+                    {!bluffRevealed ? (
+                      <div className="flex justify-center gap-4 my-4">
+                        <button onClick={() => { setBluffRevealed(true); if (BLUFF_FACTS[bluffIndex].isReal) { playRetroSound('powerup'); addPointsToPlayer(activePlayerIdx, 150); } }} className="px-6 py-3 bg-[#43B047] text-white font-bold text-xs rounded pixel-border">
+                          REAL FACT
+                        </button>
+                        <button onClick={() => { setBluffRevealed(true); if (!BLUFF_FACTS[bluffIndex].isReal) { playRetroSound('powerup'); addPointsToPlayer(activePlayerIdx, 150); } }} className="px-6 py-3 bg-[#E52521] text-white font-bold text-xs rounded pixel-border">
+                          FAKE NEWS
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-xs font-bold text-yellow-300">{BLUFF_FACTS[bluffIndex].explanation}</p>
+                        <button onClick={() => {
+                          setBluffRevealed(false);
+                          const nextB = (bluffIndex + 1) % BLUFF_FACTS.length;
+                          setBluffIndex(nextB);
+                          pushToFirebase(null, null, null, nextB);
+                        }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
+                          NEXT FACT →
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
