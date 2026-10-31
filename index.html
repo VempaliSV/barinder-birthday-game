@@ -112,7 +112,7 @@
         }, [roomCode]);
 
         const changeTab = (tabName) => {
-          setActiveTab(tabName); // Immediate local update so click registers instantly
+          setActiveTab(tabName);
           db.ref('rooms/' + roomCode).update({ activeTab: tabName });
         };
 
@@ -326,7 +326,7 @@
                   ) : (
                     <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border text-center space-y-4">
                       <h2 className="text-xl text-[#FBD000] font-black">MOST LIKELY TO COMPLETED! 👑</h2>
-                      <p className="text-xs text-white">All votes have been cast! Check out who won on the leaderboard.</p>
+                      <p className="text-xs text-white">All votes have been cast! Check out who won on hotel leaderboard.</p>
                       <button onClick={() => changeTab('hub')} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
                         RETURN TO WORLD MAP
                       </button>
