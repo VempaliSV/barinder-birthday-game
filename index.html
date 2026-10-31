@@ -25,7 +25,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-      const { useState, useEffect, useRef } = React;
+      const { useState, useEffect } = React;
 
       // Your Firebase Configuration
       const firebaseConfig = {
@@ -111,8 +111,9 @@
           return () => roomRef.off();
         }, [roomCode]);
 
-        const updateFirebase = (updates) => {
-          db.ref('rooms/' + roomCode).update(updates);
+        const changeTab = (tabName) => {
+          setActiveTab(tabName); // Immediate local update so click registers instantly
+          db.ref('rooms/' + roomCode).update({ activeTab: tabName });
         };
 
         const addPoints = (playerName, pts) => {
@@ -189,7 +190,7 @@
 
             <header className="bg-[#0090E0] border-b-4 border-black p-3 md:p-4 text-xs sticky top-0 z-40 shadow-xl">
               <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
-                <div onClick={() => updateFirebase({ activeTab: 'hub' })} className="flex items-center space-x-2 cursor-pointer">
+                <div onClick={() => changeTab('hub')} className="flex items-center space-x-2 cursor-pointer">
                   <div className="bg-[#E52521] text-white p-2 rounded pixel-border font-extrabold text-sm">🍄</div>
                   <div>
                     <div className="text-[#FBD000] font-black text-sm md:text-base">BARINDER'S B-DAY</div>
@@ -228,13 +229,13 @@
                     <h2 className="text-xl text-[#FBD000] font-black">BARINDER'S BIRTHDAY BASH! 🎉</h2>
                     <p className="text-xs my-3 text-white">Select a game mode below:</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-                      <button onClick={() => updateFirebase({ activeTab: 'level1', l1Round: 0 })} className="p-4 bg-red-600 text-white font-bold rounded text-xs pixel-border hover:bg-red-500">
+                      <button onClick={() => { db.ref('rooms/' + roomCode).update({ l1Round: 0 }); changeTab('level1'); }} className="p-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs pixel-border">
                         ❓ SUPER TRIVIA
                       </button>
-                      <button onClick={() => updateFirebase({ activeTab: 'level2', mlQuestionIdx: 0 })} className="p-4 bg-emerald-600 text-white font-bold rounded text-xs pixel-border hover:bg-emerald-500">
+                      <button onClick={() => { db.ref('rooms/' + roomCode).update({ mlQuestionIdx: 0 }); changeTab('level2'); }} className="p-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs pixel-border">
                         👑 MOST LIKELY TO...
                       </button>
-                      <button onClick={() => updateFirebase({ activeTab: 'level3', bluffIndex: 0 })} className="p-4 bg-blue-600 text-white font-bold rounded text-xs pixel-border hover:bg-blue-500">
+                      <button onClick={() => { db.ref('rooms/' + roomCode).update({ bluffIndex: 0 }); changeTab('level3'); }} className="p-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs pixel-border">
                         🕵️ BLUFFER'S DILEMMA
                       </button>
                     </div>
@@ -245,7 +246,7 @@
               {/* GAME 1: SUPER TRIVIA */}
               {activeTab === 'level1' && (
                 <div className="space-y-6">
-                  <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
+                  <button onClick={() => changeTab('hub')} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
                   {l1Round < DEFAULT_TRIVIA.length ? (
@@ -279,7 +280,7 @@
                           const nextR = l1Round + 1;
                           setL1Revealed(false);
                           setL1SelectedOpt(null);
-                          updateFirebase({ l1Round: nextR });
+                          db.ref('rooms/' + roomCode).update({ l1Round: nextR });
                         }} className="w-full py-3 bg-[#FBD000] text-black font-black text-xs rounded pixel-border">
                           {l1Round < DEFAULT_TRIVIA.length - 1 ? 'NEXT QUESTION →' : 'VIEW FINAL SCORES 🏆'}
                         </button>
@@ -289,7 +290,7 @@
                     <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border text-center space-y-4">
                       <h2 className="text-xl text-[#FBD000] font-black">SUPER TRIVIA COMPLETED! 🏆</h2>
                       <p className="text-xs text-white">Great job everyone! Check the top leaderboard for final scores.</p>
-                      <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
+                      <button onClick={() => changeTab('hub')} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
                         RETURN TO WORLD MAP
                       </button>
                     </div>
@@ -300,7 +301,7 @@
               {/* GAME 2: MOST LIKELY TO */}
               {activeTab === 'level2' && (
                 <div className="space-y-6">
-                  <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
+                  <button onClick={() => changeTab('hub')} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
                   {mlQuestionIdx < MOST_LIKELY_QUESTIONS.length ? (
@@ -317,7 +318,7 @@
                       </div>
                       <button onClick={() => {
                         const nextMl = mlQuestionIdx + 1;
-                        updateFirebase({ mlQuestionIdx: nextMl });
+                        db.ref('rooms/' + roomCode).update({ mlQuestionIdx: nextMl });
                       }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
                         {mlQuestionIdx < MOST_LIKELY_QUESTIONS.length - 1 ? 'NEXT QUESTION →' : 'FINISH GAME 🏆'}
                       </button>
@@ -326,7 +327,7 @@
                     <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border text-center space-y-4">
                       <h2 className="text-xl text-[#FBD000] font-black">MOST LIKELY TO COMPLETED! 👑</h2>
                       <p className="text-xs text-white">All votes have been cast! Check out who won on the leaderboard.</p>
-                      <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
+                      <button onClick={() => changeTab('hub')} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
                         RETURN TO WORLD MAP
                       </button>
                     </div>
@@ -337,7 +338,7 @@
               {/* GAME 3: THE BLUFFER'S DILEMMA */}
               {activeTab === 'level3' && (
                 <div className="space-y-6">
-                  <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
+                  <button onClick={() => changeTab('hub')} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
                   {bluffIndex < BLUFF_FACTS.length ? (
@@ -359,7 +360,7 @@
                           <button onClick={() => {
                             setBluffRevealed(false);
                             const nextB = bluffIndex + 1;
-                            updateFirebase({ bluffIndex: nextB });
+                            db.ref('rooms/' + roomCode).update({ bluffIndex: nextB });
                           }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
                             {bluffIndex < BLUFF_FACTS.length - 1 ? 'NEXT FACT →' : 'FINISH GAME 🏆'}
                           </button>
@@ -370,7 +371,7 @@
                     <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border text-center space-y-4">
                       <h2 className="text-xl text-[#FBD000] font-black">BLUFFER'S DILEMMA COMPLETED! 🕵️</h2>
                       <p className="text-xs text-white">All facts explored! Check out who spotted the best lies.</p>
-                      <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
+                      <button onClick={() => changeTab('hub')} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
                         RETURN TO WORLD MAP
                       </button>
                     </div>
