@@ -27,6 +27,7 @@
     <script type="text/babel">
       const { useState, useEffect } = React;
 
+      // Your Firebase Configuration
       const firebaseConfig = {
         apiKey: "AIzaSyB_9eOcXW9Wf6Aiva88dSVow8y8X2EpIHM",
         authDomain: "barinder-birthday-game.firebaseapp.com",
@@ -44,11 +45,11 @@
       const db = firebase.database();
 
       const INITIAL_PLAYERS = {
-        "Barinder": { name: "Barinder", avatar: "👑", score: 0 },
-        "Dikshant": { name: "Dikshant", avatar: "🔴", score: 0 },
-        "Mangla": { name: "Mangla", avatar: "🟢", score: 0 },
-        "Madhuri": { name: "Madhuri", avatar: "🍄", score: 0 },
-        "Divya": { name: "Divya", avatar: "🦖", score: 0 }
+        "Barinder": { name: "Barinder", avatar: "🌷", score: 0 },
+        "Dikshant": { name: "Dikshant", avatar: "🌻", score: 0 },
+        "Mangla": { name: "Mangla", avatar: "🌸", score: 0 },
+        "Madhuri": { name: "Madhuri", avatar: "🌺", score: 0 },
+        "Divya": { name: "Divya", avatar: "🌼", score: 0 }
       };
 
       const DEFAULT_TRIVIA = [
@@ -95,23 +96,24 @@
         const [showShareModal, setShowShareModal] = useState(false);
         const [copiedLink, setCopiedLink] = useState(false);
 
-        // Real-Time Firebase Sync Listener
+        // Real-Time Firebase Sync Listener for entire room players state
         useEffect(() => {
-          const roomRef = db.ref('rooms/' + roomCode + '/players');
-          roomRef.on('value', (snapshot) => {
+          const playersRef = db.ref('rooms/' + roomCode + '/players');
+          playersRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
               setPlayers(data);
             } else {
-              roomRef.set(INITIAL_PLAYERS);
+              playersRef.set(INITIAL_PLAYERS);
             }
           });
-          return () => roomRef.off();
+          return () => playersRef.off();
         }, [roomCode]);
 
         const addPoints = (playerName, pts) => {
           const currentScore = players[playerName]?.score || 0;
-          const newScore = Math.max(0, currentScore + pts);
+          const newScore = currentScore + pts;
+          // Directly push updated score to Firebase
           db.ref(`rooms/${roomCode}/players/${playerName}`).update({ score: newScore });
         };
 
@@ -135,10 +137,11 @@
         return (
           <div className="min-h-screen bg-[#2b201a] text-white font-pixel scanlines flex flex-col justify-between selection:bg-yellow-400 selection:text-black relative overflow-x-hidden">
 
+            {/* IDENTITY SELECTION MODAL */}
             {showIdentityModal && (
               <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
                 <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
-                  <span className="text-3xl">🍄</span>
+                  <span className="text-3xl">🌷</span>
                   <h3 className="text-sm md:text-base font-black text-yellow-300 uppercase">WHO ARE YOU PLAYING AS?</h3>
                   <p className="text-[10px] text-blue-100 leading-relaxed">Select your name so your scores sync correctly on everyone's screen!</p>
                   <div className="grid grid-cols-1 gap-2 my-3">
@@ -160,10 +163,11 @@
               </div>
             )}
 
+            {/* SHARE MODAL */}
             {showShareModal && (
               <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
                 <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
-                  <span className="text-3xl">🎮</span>
+                  <span className="text-3xl">🌻</span>
                   <h3 className="text-sm md:text-base font-black text-yellow-300 uppercase">LIVE MULTIPLAYER ROOM</h3>
                   <p className="text-[10px] text-blue-100 leading-relaxed">Send this link to Barinder, Dikshant, Mangla, Madhuri, and Divya!</p>
                   <div className="bg-black/60 p-3 rounded border border-black flex items-center justify-between gap-2">
@@ -182,7 +186,7 @@
             <header className="bg-[#0090E0] border-b-4 border-black p-3 md:p-4 text-xs sticky top-0 z-40 shadow-xl">
               <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
                 <div onClick={() => setActiveTab('hub')} className="flex items-center space-x-2 cursor-pointer">
-                  <div className="bg-[#E52521] text-white p-2 rounded pixel-border font-extrabold text-sm">🍄</div>
+                  <div className="bg-[#E52521] text-white p-2 rounded pixel-border font-extrabold text-sm">🌷</div>
                   <div>
                     <div className="text-[#FBD000] font-black text-sm md:text-base">BARINDER'S B-DAY</div>
                     <div className="text-white text-[10px]">Playing as: <strong className="text-yellow-300">{myIdentity}</strong> (<button onClick={() => setShowIdentityModal(true)} className="underline">Switch</button>)</div>
