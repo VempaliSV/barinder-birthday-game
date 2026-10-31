@@ -46,14 +46,13 @@
       }
       const db = firebase.database();
 
-      const MARIO_AVATARS = [
-        { id: 'mario', name: 'Mario', symbol: '🔴' },
-        { id: 'luigi', name: 'Luigi', symbol: '🟢' },
-        { id: 'peach', name: 'Peach', symbol: '👑' },
-        { id: 'toad', name: 'Toad', symbol: '🍄' },
-        { id: 'yoshi', name: 'Yoshi', symbol: '🦖' },
-        { id: 'bowser', name: 'Bowser', symbol: '🐢' }
-      ];
+      const INITIAL_PLAYERS = {
+        "Barinder": { name: "Barinder", avatar: "👑", score: 0 },
+        "Dikshant": { name: "Dikshant", avatar: "🔴", score: 0 },
+        "Mangla": { name: "Mangla", avatar: "🟢", score: 0 },
+        "Madhuri": { name: "Madhuri", avatar: "🍄", score: 0 },
+        "Divya": { name: "Divya", avatar: "🦖", score: 0 }
+      };
 
       const DEFAULT_TRIVIA = [
         { round: 1, difficulty: "WORLD 1-1: EASY", question: "What is Barinder's absolute favorite go-to comfort meal?", options: ["Butter Chicken & Naan", "Pizza & Garlic Dip", "Gourmet Burgers", "Fresh Sushi Combo"], correctIndex: 0, points: 100 },
@@ -80,29 +79,21 @@
 
       function App() {
         const urlParams = new URLSearchParams(window.location.search);
-        const roomCode = urlParams.get('room') || 'BARINDER-ROOM-1';
+        const roomCode = urlParams.get('room') || 'BARINDER-PARTY';
 
         const [activeTab, setActiveTab] = useState('hub');
-        const [soundEnabled, setSoundEnabled] = useState(true);
-        const [coins, setCoins] = useState(99);
-        const [showShareModal, setShowShareModal] = useState(false);
-        const [copiedLink, setCopiedLink] = useState(false);
+        const [myIdentity, setMyIdentity] = useState('Barinder'); // Default logged-in user on this device
+        const [showIdentityModal, setShowIdentityModal] = useState(true);
 
-        const [players, setPlayers] = useState([
-          { id: 1, name: 'BARINDER', avatar: '👑', score: 0 },
-          { id: 2, name: 'PLAYER 1', avatar: '🔴', score: 0 },
-          { id: 3, name: 'PLAYER 2', avatar: '🟢', score: 0 },
-          { id: 4, name: 'PLAYER 3', avatar: '🍄', score: 0 },
-          { id: 5, name: 'PLAYER 4', avatar: '🦖', score: 0 },
-        ]);
-
-        const [activePlayerIdx, setActivePlayerIdx] = useState(0);
+        const [players, setPlayers] = useState(INITIAL_PLAYERS);
         const [l1Round, setL1Round] = useState(0);
         const [l1SelectedOpt, setL1SelectedOpt] = useState(null);
         const [l1Revealed, setL1Revealed] = useState(false);
         const [mlQuestionIdx, setMlQuestionIdx] = useState(0);
         const [bluffIndex, setBluffIndex] = useState(0);
         const [bluffRevealed, setBluffRevealed] = useState(false);
+        const [showShareModal, setShowShareModal] = useState(false);
+        const [copiedLink, setCopiedLink] = useState(false);
 
         // Real-Time Firebase Sync Listener
         useEffect(() => {
@@ -116,57 +107,26 @@
               if (data.bluffIndex !== undefined) setBluffIndex(data.bluffIndex);
               if (data.activeTab) setActiveTab(data.activeTab);
             } else {
-              roomRef.set({ players, l1Round: 0, mlQuestionIdx: 0, bluffIndex: 0, activeTab: 'hub' });
+              roomRef.set({ players: INITIAL_PLAYERS, l1Round: 0, mlQuestionIdx: 0, bluffIndex: 0, activeTab: 'hub' });
             }
           });
           return () => roomRef.off();
         }, [roomCode]);
 
-        const pushToFirebase = (updatedPlayers, newRound, newMl, newBluff, newTab) => {
-          db.ref('rooms/' + roomCode).set({
-            players: updatedPlayers || players,
-            l1Round: newRound !== undefined ? newRound : l1Round,
-            mlQuestionIdx: newMl !== undefined ? newMl : mlQuestionIdx,
-            bluffIndex: newBluff !== undefined ? newBluff : bluffIndex,
-            activeTab: newTab || activeTab
-          });
+        const updateFirebase = (updates) => {
+          db.ref('rooms/' + roomCode).update(updates);
         };
 
-        const playRetroSound = (type) => {
-          if (!soundEnabled) return;
-          try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            if (type === 'coin') {
-              osc.type = 'square';
-              osc.frequency.setValueAtTime(987.77, now);
-              osc.frequency.setValueAtTime(1318.51, now + 0.08);
-              gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-              osc.start(now); osc.stop(now + 0.3);
-            } else if (type === 'powerup') {
-              osc.type = 'triangle';
-              [330, 392, 659, 523].forEach((freq, i) => osc.frequency.setValueAtTime(freq, now + i * 0.05));
-              gain.gain.setValueAtTime(0.25, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-              osc.start(now); osc.stop(now + 0.35);
-            }
-          } catch (e) {}
-        };
-
-        const addPointsToPlayer = (playerIdx, pts) => {
-          const updated = [...players];
-          updated[playerIdx].score = Math.max(0, updated[playerIdx].score + pts);
-          setPlayers(updated);
-          pushToFirebase(updated);
+        const addPoints = (playerName, pts) => {
+          const currentScore = players[playerName]?.score || 0;
+          const newScore = Math.max(0, currentScore + pts);
+          db.ref(`rooms/${roomCode}/players/${playerName}/score`).set(newScore);
         };
 
         const handleCopyLink = () => {
           const shareUrl = window.location.origin + window.location.pathname + '?room=' + roomCode;
           navigator.clipboard.writeText(shareUrl);
           setCopiedLink(true);
-          playRetroSound('coin');
           setTimeout(() => setCopiedLink(false), 3000);
         };
 
@@ -176,20 +136,46 @@
           setL1Revealed(true);
           const q = DEFAULT_TRIVIA[l1Round];
           if (optIdx === q.correctIndex) {
-            playRetroSound('powerup');
-            addPointsToPlayer(activePlayerIdx, q.points);
+            addPoints(myIdentity, q.points);
           }
         };
 
         return (
           <div className="min-h-screen bg-[#2b201a] text-white font-pixel scanlines flex flex-col justify-between selection:bg-yellow-400 selection:text-black relative overflow-x-hidden">
-            
+
+            {/* IDENTITY SELECTION MODAL */}
+            {showIdentityModal && (
+              <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+                <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
+                  <span className="text-3xl">🍄</span>
+                  <h3 className="text-sm md:text-base font-black text-yellow-300 uppercase">WHO ARE YOU PLAYING AS?</h3>
+                  <p className="text-[10px] text-blue-100 leading-relaxed">Select your name so your scores sync correctly on everyone's screen!</p>
+                  <div className="grid grid-cols-1 gap-2 my-3">
+                    {Object.keys(INITIAL_PLAYERS).map(name => (
+                      <button
+                        key={name}
+                        onClick={() => { setMyIdentity(name); setShowIdentityModal(false); }}
+                        className={"p-3 rounded border-2 border-black text-xs font-bold flex items-center justify-between " + (myIdentity === name ? 'bg-[#FBD000] text-black' : 'bg-blue-800 text-white hover:bg-blue-700')}
+                      >
+                        <span>{INITIAL_PLAYERS[name].avatar} {name}</span>
+                        {myIdentity === name && <span>✓ SELECTED</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => setShowIdentityModal(false)} className="w-full py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
+                    ENTER ARCADE →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* SHARE MODAL */}
             {showShareModal && (
               <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
                 <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
                   <span className="text-3xl">🎮</span>
                   <h3 className="text-sm md:text-base font-black text-yellow-300 uppercase">LIVE MULTIPLAYER ROOM</h3>
-                  <p className="text-[10px] text-blue-100 leading-relaxed">Share this link with your friends. All scores update simultaneously on everyone's screen!</p>
+                  <p className="text-[10px] text-blue-100 leading-relaxed">Send this link to Barinder, Dikshant, Mangla, Madhuri, and Divya!</p>
                   <div className="bg-black/60 p-3 rounded border border-black flex items-center justify-between gap-2">
                     <span className="text-[10px] text-yellow-300 truncate font-mono">{window.location.origin}?room={roomCode}</span>
                     <button onClick={handleCopyLink} className="px-3 py-1.5 bg-[#FBD000] text-black font-bold text-[10px] rounded pixel-border">
@@ -205,11 +191,11 @@
 
             <header className="bg-[#0090E0] border-b-4 border-black p-3 md:p-4 text-xs sticky top-0 z-40 shadow-xl">
               <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
-                <div onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="flex items-center space-x-2 cursor-pointer">
+                <div onClick={() => updateFirebase({ activeTab: 'hub' })} className="flex items-center space-x-2 cursor-pointer">
                   <div className="bg-[#E52521] text-white p-2 rounded pixel-border font-extrabold text-sm">🍄</div>
                   <div>
                     <div className="text-[#FBD000] font-black text-sm md:text-base">BARINDER'S B-DAY</div>
-                    <div className="text-white text-[10px]">ROOM: {roomCode}</div>
+                    <div className="text-white text-[10px]">Playing as: <strong className="text-yellow-300">{myIdentity}</strong> (<button onClick={() => setShowIdentityModal(true)} className="underline">Switch</button>)</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -223,16 +209,15 @@
               <div className="mt-3 pt-2 border-t border-blue-400/50 flex items-center justify-between overflow-x-auto gap-2">
                 <span className="text-[10px] text-blue-100 uppercase shrink-0">LIVE SCORES:</span>
                 <div className="flex space-x-2">
-                  {players.map((p, idx) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setActivePlayerIdx(idx)}
-                      className={"px-2 py-1 rounded text-[9px] flex items-center space-x-1 " + (activePlayerIdx === idx ? 'bg-[#E52521] text-white pixel-border-gold font-bold scale-105' : 'bg-[#0060a0] text-blue-200')}
+                  {Object.values(players).map((p) => (
+                    <div
+                      key={p.name}
+                      className={"px-2.5 py-1 rounded text-[9px] flex items-center space-x-1 " + (myIdentity === p.name ? 'bg-[#E52521] text-white pixel-border-gold font-bold scale-105' : 'bg-[#0060a0] text-blue-200')}
                     >
                       <span>{p.avatar}</span>
-                      <span className="max-w-[60px] truncate">{p.name}</span>
+                      <span className="truncate">{p.name}</span>
                       <span className="text-[#FBD000] font-black">({p.score})</span>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -245,13 +230,13 @@
                     <h2 className="text-xl text-[#FBD000] font-black">BARINDER'S BIRTHDAY BASH! 🎉</h2>
                     <p className="text-xs my-3 text-white">Select a game mode below:</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-                      <button onClick={() => { setActiveTab('level1'); pushToFirebase(null, null, null, null, 'level1'); }} className="p-4 bg-red-600 text-white font-bold rounded text-xs pixel-border hover:bg-red-500">
+                      <button onClick={() => updateFirebase({ activeTab: 'level1' })} className="p-4 bg-red-600 text-white font-bold rounded text-xs pixel-border hover:bg-red-500">
                         ❓ SUPER TRIVIA
                       </button>
-                      <button onClick={() => { setActiveTab('level2'); pushToFirebase(null, null, null, null, 'level2'); }} className="p-4 bg-emerald-600 text-white font-bold rounded text-xs pixel-border hover:bg-emerald-500">
+                      <button onClick={() => updateFirebase({ activeTab: 'level2' })} className="p-4 bg-emerald-600 text-white font-bold rounded text-xs pixel-border hover:bg-emerald-500">
                         👑 MOST LIKELY TO...
                       </button>
-                      <button onClick={() => { setActiveTab('level3'); pushToFirebase(null, null, null, null, 'level3'); }} className="p-4 bg-blue-600 text-white font-bold rounded text-xs pixel-border hover:bg-blue-500">
+                      <button onClick={() => updateFirebase({ activeTab: 'level3' })} className="p-4 bg-blue-600 text-white font-bold rounded text-xs pixel-border hover:bg-blue-500">
                         🕵️ BLUFFER'S DILEMMA
                       </button>
                     </div>
@@ -262,7 +247,7 @@
               {/* GAME 1: SUPER TRIVIA */}
               {activeTab === 'level1' && (
                 <div className="space-y-6">
-                  <button onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="text-[10px] font-bold text-yellow-400">
+                  <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
                   <div className="bg-[#E52521] border-4 border-black p-5 rounded-lg pixel-border space-y-4">
@@ -293,10 +278,9 @@
                     {l1Revealed && (
                       <button onClick={() => {
                         const nextR = (l1Round + 1) % DEFAULT_TRIVIA.length;
-                        setL1Round(nextR);
                         setL1Revealed(false);
                         setL1SelectedOpt(null);
-                        pushToFirebase(null, nextR);
+                        updateFirebase({ l1Round: nextR });
                       }} className="w-full py-3 bg-[#FBD000] text-black font-black text-xs rounded pixel-border">
                         NEXT QUESTION →
                       </button>
@@ -308,15 +292,15 @@
               {/* GAME 2: MOST LIKELY TO */}
               {activeTab === 'level2' && (
                 <div className="space-y-6">
-                  <button onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="text-[10px] font-bold text-yellow-400">
+                  <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
                   <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
                     <span className="bg-[#E52521] text-white text-[10px] px-3 py-1 rounded pixel-border">VOTING ROUND</span>
                     <h3 className="text-base md:text-xl font-black text-white">{MOST_LIKELY_QUESTIONS[mlQuestionIdx]}</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 my-4">
-                      {players.map((p, pIdx) => (
-                        <button key={p.id} onClick={() => { playRetroSound('powerup'); addPointsToPlayer(pIdx, 100); alert(p.name + ' got a vote! (+100 pts)'); }} className="p-3 bg-emerald-800 hover:bg-emerald-700 border-2 border-black rounded text-xs font-bold flex flex-col items-center">
+                      {Object.values(players).map((p) => (
+                        <button key={p.name} onClick={() => { addPoints(p.name, 100); alert(p.name + ' got a vote! (+100 pts)'); }} className="p-3 bg-emerald-800 hover:bg-emerald-700 border-2 border-black rounded text-xs font-bold flex flex-col items-center">
                           <span className="text-2xl mb-1">{p.avatar}</span>
                           <span>{p.name}</span>
                         </button>
@@ -324,8 +308,7 @@
                     </div>
                     <button onClick={() => {
                       const nextMl = (mlQuestionIdx + 1) % MOST_LIKELY_QUESTIONS.length;
-                      setMlQuestionIdx(nextMl);
-                      pushToFirebase(null, null, nextMl);
+                      updateFirebase({ mlQuestionIdx: nextMl });
                     }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
                       NEXT QUESTION →
                     </button>
@@ -336,7 +319,7 @@
               {/* GAME 3: THE BLUFFER'S DILEMMA */}
               {activeTab === 'level3' && (
                 <div className="space-y-6">
-                  <button onClick={() => { setActiveTab('hub'); pushToFirebase(null, null, null, null, 'hub'); }} className="text-[10px] font-bold text-yellow-400">
+                  <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
                   <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
@@ -344,10 +327,10 @@
                     <h3 className="text-sm md:text-lg font-black text-white leading-relaxed">{BLUFF_FACTS[bluffIndex].fact}</h3>
                     {!bluffRevealed ? (
                       <div className="flex justify-center gap-4 my-4">
-                        <button onClick={() => { setBluffRevealed(true); if (BLUFF_FACTS[bluffIndex].isReal) { playRetroSound('powerup'); addPointsToPlayer(activePlayerIdx, 150); } }} className="px-6 py-3 bg-[#43B047] text-white font-bold text-xs rounded pixel-border">
+                        <button onClick={() => { setBluffRevealed(true); if (BLUFF_FACTS[bluffIndex].isReal) addPoints(myIdentity, 150); }} className="px-6 py-3 bg-[#43B047] text-white font-bold text-xs rounded pixel-border">
                           REAL FACT
                         </button>
-                        <button onClick={() => { setBluffRevealed(true); if (!BLUFF_FACTS[bluffIndex].isReal) { playRetroSound('powerup'); addPointsToPlayer(activePlayerIdx, 150); } }} className="px-6 py-3 bg-[#E52521] text-white font-bold text-xs rounded pixel-border">
+                        <button onClick={() => { setBluffRevealed(true); if (!BLUFF_FACTS[bluffIndex].isReal) addPoints(myIdentity, 150); }} className="px-6 py-3 bg-[#E52521] text-white font-bold text-xs rounded pixel-border">
                           FAKE NEWS
                         </button>
                       </div>
@@ -357,8 +340,7 @@
                         <button onClick={() => {
                           setBluffRevealed(false);
                           const nextB = (bluffIndex + 1) % BLUFF_FACTS.length;
-                          setBluffIndex(nextB);
-                          pushToFirebase(null, null, null, nextB);
+                          updateFirebase({ bluffIndex: nextB });
                         }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
                           NEXT FACT →
                         </button>
@@ -370,8 +352,8 @@
             </main>
 
             <footer className="bg-black border-t-4 border-black p-3 text-center text-[9px] text-zinc-400 flex justify-between items-center max-w-5xl mx-auto w-full">
-              <span>LIVE MULTIPLAYER ACTIVE</span>
-              <span className="text-yellow-400 font-bold">COINS: {coins} 🪙</span>
+              <span>LIVE MULTIPLAYER ACTIVE • BARINDER'S B-DAY</span>
+              <span className="text-yellow-400 font-bold">ROOM: {roomCode}</span>
             </footer>
           </div>
         );
