@@ -82,7 +82,7 @@
         const roomCode = urlParams.get('room') || 'BARINDER-PARTY';
 
         const [activeTab, setActiveTab] = useState('hub');
-        const [myIdentity, setMyIdentity] = useState('Barinder'); // Default logged-in user on this device
+        const [myIdentity, setMyIdentity] = useState('Barinder');
         const [showIdentityModal, setShowIdentityModal] = useState(true);
 
         const [players, setPlayers] = useState(INITIAL_PLAYERS);
@@ -145,7 +145,7 @@
 
             {/* IDENTITY SELECTION MODAL */}
             {showIdentityModal && (
-              <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+              <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
                 <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
                   <span className="text-3xl">🍄</span>
                   <h3 className="text-sm md:text-base font-black text-yellow-300 uppercase">WHO ARE YOU PLAYING AS?</h3>
@@ -230,13 +230,13 @@
                     <h2 className="text-xl text-[#FBD000] font-black">BARINDER'S BIRTHDAY BASH! 🎉</h2>
                     <p className="text-xs my-3 text-white">Select a game mode below:</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-                      <button onClick={() => updateFirebase({ activeTab: 'level1' })} className="p-4 bg-red-600 text-white font-bold rounded text-xs pixel-border hover:bg-red-500">
+                      <button onClick={() => updateFirebase({ activeTab: 'level1', l1Round: 0 })} className="p-4 bg-red-600 text-white font-bold rounded text-xs pixel-border hover:bg-red-500">
                         ❓ SUPER TRIVIA
                       </button>
-                      <button onClick={() => updateFirebase({ activeTab: 'level2' })} className="p-4 bg-emerald-600 text-white font-bold rounded text-xs pixel-border hover:bg-emerald-500">
+                      <button onClick={() => updateFirebase({ activeTab: 'level2', mlQuestionIdx: 0 })} className="p-4 bg-emerald-600 text-white font-bold rounded text-xs pixel-border hover:bg-emerald-500">
                         👑 MOST LIKELY TO...
                       </button>
-                      <button onClick={() => updateFirebase({ activeTab: 'level3' })} className="p-4 bg-blue-600 text-white font-bold rounded text-xs pixel-border hover:bg-blue-500">
+                      <button onClick={() => updateFirebase({ activeTab: 'level3', bluffIndex: 0 })} className="p-4 bg-blue-600 text-white font-bold rounded text-xs pixel-border hover:bg-blue-500">
                         🕵️ BLUFFER'S DILEMMA
                       </button>
                     </div>
@@ -250,42 +250,52 @@
                   <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
-                  <div className="bg-[#E52521] border-4 border-black p-5 rounded-lg pixel-border space-y-4">
-                    <div className="flex items-center justify-between border-b-2 border-black/40 pb-3">
-                      <div>
-                        <span className="text-[9px] text-yellow-300 font-bold">{DEFAULT_TRIVIA[l1Round]?.difficulty}</span>
-                        <h3 className="text-base md:text-xl font-black text-white mt-1">{DEFAULT_TRIVIA[l1Round]?.question}</h3>
+                  {l1Round < DEFAULT_TRIVIA.length ? (
+                    <div className="bg-[#E52521] border-4 border-black p-5 rounded-lg pixel-border space-y-4">
+                      <div className="flex items-center justify-between border-b-2 border-black/40 pb-3">
+                        <div>
+                          <span className="text-[9px] text-yellow-300 font-bold">{DEFAULT_TRIVIA[l1Round]?.difficulty}</span>
+                          <h3 className="text-base md:text-xl font-black text-white mt-1">{DEFAULT_TRIVIA[l1Round]?.question}</h3>
+                        </div>
+                        <div className="bg-[#FBD000] text-black px-3 py-1.5 rounded pixel-border text-center">
+                          <span className="text-[9px] block font-bold">PTS</span>
+                          <span className="text-sm font-black">+{DEFAULT_TRIVIA[l1Round]?.points}</span>
+                        </div>
                       </div>
-                      <div className="bg-[#FBD000] text-black px-3 py-1.5 rounded pixel-border text-center">
-                        <span className="text-[9px] block font-bold">PTS</span>
-                        <span className="text-sm font-black">+{DEFAULT_TRIVIA[l1Round]?.points}</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
+                        {DEFAULT_TRIVIA[l1Round]?.options.map((opt, idx) => {
+                          let btnBg = "bg-[#0090E0] hover:bg-blue-600 text-white";
+                          if (l1Revealed) {
+                            if (idx === DEFAULT_TRIVIA[l1Round].correctIndex) btnBg = "bg-[#43B047] text-white font-bold ring-4 ring-yellow-300";
+                            else if (idx === l1SelectedOpt) btnBg = "bg-stone-800 text-red-300";
+                          }
+                          return (
+                            <button key={idx} onClick={() => handleL1Answer(idx)} disabled={l1Revealed} className={"p-4 rounded border-2 border-black text-left text-xs font-bold " + btnBg}>
+                              {String.fromCharCode(65 + idx)}. {opt}
+                            </button>
+                          );
+                        })}
                       </div>
+                      {l1Revealed && (
+                        <button onClick={() => {
+                          const nextR = l1Round + 1;
+                          setL1Revealed(false);
+                          setL1SelectedOpt(null);
+                          updateFirebase({ l1Round: nextR });
+                        }} className="w-full py-3 bg-[#FBD000] text-black font-black text-xs rounded pixel-border">
+                          {l1Round < DEFAULT_TRIVIA.length - 1 ? 'NEXT QUESTION →' : 'VIEW FINAL SCORES 🏆'}
+                        </button>
+                      )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 my-4">
-                      {DEFAULT_TRIVIA[l1Round]?.options.map((opt, idx) => {
-                        let btnBg = "bg-[#0090E0] hover:bg-blue-600 text-white";
-                        if (l1Revealed) {
-                          if (idx === DEFAULT_TRIVIA[l1Round].correctIndex) btnBg = "bg-[#43B047] text-white font-bold ring-4 ring-yellow-300";
-                          else if (idx === l1SelectedOpt) btnBg = "bg-stone-800 text-red-300";
-                        }
-                        return (
-                          <button key={idx} onClick={() => handleL1Answer(idx)} disabled={l1Revealed} className={"p-4 rounded border-2 border-black text-left text-xs font-bold " + btnBg}>
-                            {String.fromCharCode(65 + idx)}. {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {l1Revealed && (
-                      <button onClick={() => {
-                        const nextR = (l1Round + 1) % DEFAULT_TRIVIA.length;
-                        setL1Revealed(false);
-                        setL1SelectedOpt(null);
-                        updateFirebase({ l1Round: nextR });
-                      }} className="w-full py-3 bg-[#FBD000] text-black font-black text-xs rounded pixel-border">
-                        NEXT QUESTION →
+                  ) : (
+                    <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border text-center space-y-4">
+                      <h2 className="text-xl text-[#FBD000] font-black">SUPER TRIVIA COMPLETED! 🏆</h2>
+                      <p className="text-xs text-white">Great job everyone! Check the top leaderboard for final scores.</p>
+                      <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
+                        RETURN TO WORLD MAP
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -295,24 +305,34 @@
                   <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
-                  <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
-                    <span className="bg-[#E52521] text-white text-[10px] px-3 py-1 rounded pixel-border">VOTING ROUND</span>
-                    <h3 className="text-base md:text-xl font-black text-white">{MOST_LIKELY_QUESTIONS[mlQuestionIdx]}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 my-4">
-                      {Object.values(players).map((p) => (
-                        <button key={p.name} onClick={() => { addPoints(p.name, 100); alert(p.name + ' got a vote! (+100 pts)'); }} className="p-3 bg-emerald-800 hover:bg-emerald-700 border-2 border-black rounded text-xs font-bold flex flex-col items-center">
-                          <span className="text-2xl mb-1">{p.avatar}</span>
-                          <span>{p.name}</span>
-                        </button>
-                      ))}
+                  {mlQuestionIdx < MOST_LIKELY_QUESTIONS.length ? (
+                    <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
+                      <span className="bg-[#E52521] text-white text-[10px] px-3 py-1 rounded pixel-border">VOTING ROUND ({mlQuestionIdx + 1}/{MOST_LIKELY_QUESTIONS.length})</span>
+                      <h3 className="text-base md:text-xl font-black text-white">{MOST_LIKELY_QUESTIONS[mlQuestionIdx]}</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 my-4">
+                        {Object.values(players).map((p) => (
+                          <button key={p.name} onClick={() => { addPoints(p.name, 100); alert(p.name + ' got a vote! (+100 pts)'); }} className="p-3 bg-emerald-800 hover:bg-emerald-700 border-2 border-black rounded text-xs font-bold flex flex-col items-center">
+                            <span className="text-2xl mb-1">{p.avatar}</span>
+                            <span>{p.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <button onClick={() => {
+                        const nextMl = mlQuestionIdx + 1;
+                        updateFirebase({ mlQuestionIdx: nextMl });
+                      }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
+                        {mlQuestionIdx < MOST_LIKELY_QUESTIONS.length - 1 ? 'NEXT QUESTION →' : 'FINISH GAME 🏆'}
+                      </button>
                     </div>
-                    <button onClick={() => {
-                      const nextMl = (mlQuestionIdx + 1) % MOST_LIKELY_QUESTIONS.length;
-                      updateFirebase({ mlQuestionIdx: nextMl });
-                    }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
-                      NEXT QUESTION →
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border text-center space-y-4">
+                      <h2 className="text-xl text-[#FBD000] font-black">MOST LIKELY TO COMPLETED! 👑</h2>
+                      <p className="text-xs text-white">All votes have been cast! Check out who won on the leaderboard.</p>
+                      <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
+                        RETURN TO WORLD MAP
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -322,31 +342,41 @@
                   <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="text-[10px] font-bold text-yellow-400">
                     ← RETURN TO WORLD MAP
                   </button>
-                  <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
-                    <span className="bg-purple-600 text-white text-[10px] px-3 py-1 rounded pixel-border">FACT #{bluffIndex + 1} OF {BLUFF_FACTS.length}</span>
-                    <h3 className="text-sm md:text-lg font-black text-white leading-relaxed">{BLUFF_FACTS[bluffIndex].fact}</h3>
-                    {!bluffRevealed ? (
-                      <div className="flex justify-center gap-4 my-4">
-                        <button onClick={() => { setBluffRevealed(true); if (BLUFF_FACTS[bluffIndex].isReal) addPoints(myIdentity, 150); }} className="px-6 py-3 bg-[#43B047] text-white font-bold text-xs rounded pixel-border">
-                          REAL FACT
-                        </button>
-                        <button onClick={() => { setBluffRevealed(true); if (!BLUFF_FACTS[bluffIndex].isReal) addPoints(myIdentity, 150); }} className="px-6 py-3 bg-[#E52521] text-white font-bold text-xs rounded pixel-border">
-                          FAKE NEWS
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <p className="text-xs font-bold text-yellow-300">{BLUFF_FACTS[bluffIndex].explanation}</p>
-                        <button onClick={() => {
-                          setBluffRevealed(false);
-                          const nextB = (bluffIndex + 1) % BLUFF_FACTS.length;
-                          updateFirebase({ bluffIndex: nextB });
-                        }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
-                          NEXT FACT →
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {bluffIndex < BLUFF_FACTS.length ? (
+                    <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border space-y-4 text-center">
+                      <span className="bg-purple-600 text-white text-[10px] px-3 py-1 rounded pixel-border">FACT #{bluffIndex + 1} OF {BLUFF_FACTS.length}</span>
+                      <h3 className="text-sm md:text-lg font-black text-white leading-relaxed">{BLUFF_FACTS[bluffIndex].fact}</h3>
+                      {!bluffRevealed ? (
+                        <div className="flex justify-center gap-4 my-4">
+                          <button onClick={() => { setBluffRevealed(true); if (BLUFF_FACTS[bluffIndex].isReal) addPoints(myIdentity, 150); }} className="px-6 py-3 bg-[#43B047] text-white font-bold text-xs rounded pixel-border">
+                            REAL FACT
+                          </button>
+                          <button onClick={() => { setBluffRevealed(true); if (!BLUFF_FACTS[bluffIndex].isReal) addPoints(myIdentity, 150); }} className="px-6 py-3 bg-[#E52521] text-white font-bold text-xs rounded pixel-border">
+                            FAKE NEWS
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-xs font-bold text-yellow-300">{BLUFF_FACTS[bluffIndex].explanation}</p>
+                          <button onClick={() => {
+                            setBluffRevealed(false);
+                            const nextB = bluffIndex + 1;
+                            updateFirebase({ bluffIndex: nextB });
+                          }} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
+                            {bluffIndex < BLUFF_FACTS.length - 1 ? 'NEXT FACT →' : 'FINISH GAME 🏆'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-[#43B047] border-4 border-black p-6 rounded-lg pixel-border text-center space-y-4">
+                      <h2 className="text-xl text-[#FBD000] font-black">BLUFFER'S DILEMMA COMPLETED! 🕵️</h2>
+                      <p className="text-xs text-white">All facts explored! Check out who spotted the best lies.</p>
+                      <button onClick={() => updateFirebase({ activeTab: 'hub' })} className="px-6 py-3 bg-[#E52521] text-white font-black text-xs rounded pixel-border">
+                        RETURN TO WORLD MAP
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </main>
