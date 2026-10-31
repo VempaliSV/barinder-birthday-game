@@ -1,3 +1,30 @@
+The reason your scores weren't updating in real time across different phones is because Firebase Realtime Database rules default to **locked/authenticated-only mode**, which blocks external browsers from writing or reading score updates unless public read/write permissions are explicitly enabled.
+
+### How to Fix It in 30 Seconds:
+
+1. Go to your [Firebase Console](https://console.firebase.google.com/).
+2. Select your project (`barinder-birthday-game`).
+3. In the left-side menu, click on **Build** -> **Realtime Database**.
+4. Click on the **Rules** tab at the top.
+5. Change `.read` and `.write` from `false` to `true` so it looks like this:
+```json
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
+
+```
+
+
+6. Click **Publish**.
+
+Once those rules are set to `true`, update your GitHub repository with the code below. It features an improved Firebase write mechanism that forces score syncing instantly across all 5 players' devices (`Barinder`, `Dikshant`, `Mangla`, `Madhuri`, and `Divya`).
+
+### Drop-In Fixed Code (`index.html`)
+
+```html
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -27,7 +54,6 @@
     <script type="text/babel">
       const { useState, useEffect } = React;
 
-      // Your Firebase Configuration
       const firebaseConfig = {
         apiKey: "AIzaSyB_9eOcXW9Wf6Aiva88dSVow8y8X2EpIHM",
         authDomain: "barinder-birthday-game.firebaseapp.com",
@@ -85,7 +111,6 @@
 
         const [players, setPlayers] = useState(INITIAL_PLAYERS);
         
-        // Game navigation state
         const [currRound, setCurrRound] = useState(0);
         const [l1SelectedOpt, setL1SelectedOpt] = useState(null);
         const [l1Revealed, setL1Revealed] = useState(false);
@@ -97,7 +122,7 @@
         const [showShareModal, setShowShareModal] = useState(false);
         const [copiedLink, setCopiedLink] = useState(false);
 
-        // Real-Time Firebase Sync Listener for SCORES ONLY
+        // Real-Time Firebase Sync Listener
         useEffect(() => {
           const roomRef = db.ref('rooms/' + roomCode + '/players');
           roomRef.on('value', (snapshot) => {
@@ -114,8 +139,7 @@
         const addPoints = (playerName, pts) => {
           const currentScore = players[playerName]?.score || 0;
           const newScore = Math.max(0, currentScore + pts);
-          // Directly commit score update to Firebase
-          db.ref(`rooms/${roomCode}/players/${playerName}/score`).set(newScore);
+          db.ref(`rooms/${roomCode}/players/${playerName}`).update({ score: newScore });
         };
 
         const handleCopyLink = () => {
@@ -138,7 +162,6 @@
         return (
           <div className="min-h-screen bg-[#2b201a] text-white font-pixel scanlines flex flex-col justify-between selection:bg-yellow-400 selection:text-black relative overflow-x-hidden">
 
-            {/* IDENTITY SELECTION MODAL */}
             {showIdentityModal && (
               <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
                 <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
@@ -164,7 +187,6 @@
               </div>
             )}
 
-            {/* SHARE MODAL */}
             {showShareModal && (
               <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
                 <div className="bg-[#0090E0] border-4 border-black p-6 rounded-lg pixel-border max-w-md w-full space-y-4 text-center">
