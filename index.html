@@ -90,6 +90,8 @@
         const [l1Revealed, setL1Revealed] = useState(false);
 
         const [currMl, setCurrMl] = useState(0);
+        const [mlVotedPlayer, setMlVotedPlayer] = useState(null);
+
         const [currBluff, setCurrBluff] = useState(0);
         const [bluffRevealed, setBluffRevealed] = useState(false);
 
@@ -122,6 +124,7 @@
             setActiveTab('hub');
             setCurrRound(0);
             setCurrMl(0);
+            setMlVotedPlayer(null);
             setCurrBluff(0);
           }
         };
@@ -241,7 +244,7 @@
                       <button onClick={() => { setCurrRound(0); setL1Revealed(false); setActiveTab('level1'); }} className="p-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs pixel-border">
                         ❓ SUPER TRIVIA
                       </button>
-                      <button onClick={() => { setCurrMl(0); setActiveTab('level2'); }} className="p-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs pixel-border">
+                      <button onClick={() => { setCurrMl(0); setMlVotedPlayer(null); setActiveTab('level2'); }} className="p-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded text-xs pixel-border">
                         👑 MOST LIKELY TO...
                       </button>
                       <button onClick={() => { setCurrBluff(0); setBluffRevealed(false); setActiveTab('level3'); }} className="p-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded text-xs pixel-border">
@@ -306,7 +309,7 @@
                 </div>
               )}
 
-              {/* GAME 2: MOST LIKELY TO */}
+              {/* GAME 2: MOST LIKELY TO (SILENT VOTING, NO ALERT DIALOG) */}
               {activeTab === 'level2' && (
                 <div className="space-y-6">
                   <button onClick={() => setActiveTab('hub')} className="text-[10px] font-bold text-yellow-400">
@@ -317,14 +320,28 @@
                       <span className="bg-[#E52521] text-white text-[10px] px-3 py-1 rounded pixel-border">VOTING ROUND ({currMl + 1}/{MOST_LIKELY_QUESTIONS.length})</span>
                       <h3 className="text-base md:text-xl font-black text-white">{MOST_LIKELY_QUESTIONS[currMl]}</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 my-4">
-                        {Object.values(players).map((p) => (
-                          <button key={p.name} onClick={() => alert('Voted for ' + p.name + '!')} className="p-3 bg-emerald-800 hover:bg-emerald-700 border-2 border-black rounded text-xs font-bold flex flex-col items-center">
-                            <span className="text-2xl mb-1">{p.avatar}</span>
-                            <span>{p.name}</span>
-                          </button>
-                        ))}
+                        {Object.values(players).map((p) => {
+                          const isVoted = mlVotedPlayer === p.name;
+                          return (
+                            <button
+                              key={p.name}
+                              onClick={() => setMlVotedPlayer(p.name)}
+                              className={"p-3 border-2 border-black rounded text-xs font-bold flex flex-col items-center transition-all " + (isVoted ? 'bg-[#FBD000] text-black scale-105 border-yellow-300' : 'bg-emerald-800 hover:bg-emerald-700 text-white')}
+                            >
+                              <span className="text-2xl mb-1">{p.avatar}</span>
+                              <span>{p.name}</span>
+                              {isVoted && <span className="text-[8px] font-black mt-1 text-red-600">VOTED ✓</span>}
+                            </button>
+                          );
+                        })}
                       </div>
-                      <button onClick={() => setCurrMl(currMl + 1)} className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border">
+                      <button
+                        onClick={() => {
+                          setMlVotedPlayer(null);
+                          setCurrMl(currMl + 1);
+                        }}
+                        className="px-6 py-2 bg-[#FBD000] text-black font-bold text-xs rounded pixel-border"
+                      >
                         {currMl < MOST_LIKELY_QUESTIONS.length - 1 ? 'NEXT QUESTION →' : 'FINISH GAME 🏆'}
                       </button>
                     </div>
