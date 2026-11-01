@@ -1,12 +1,3 @@
-Modern browsers block audio from playing automatically until you interact with the page first (this is called the **Autoplay Policy**).
-
-Additionally, if your device's audio context was created before a user gesture occurred, the web audio engine initializes in a `"suspended"` state.
-
-Here is the fixed code with an **audio unlock listener** added. The moment you tap or click anywhere on the screen (including selecting your player avatar), it unpauses the browser's audio context and plays a test retro chime so sound works reliably on all devices (mobile safari, chrome, desktop).
-
-### Drop-In Fixed Code (`index.html`)
-
-```html
 <!DOCTYPE html>
 <html lang="en">
   <head>
